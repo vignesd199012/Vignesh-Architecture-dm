@@ -1,0 +1,296 @@
+
+Observation Request Final Query Used in Prod : 
+
+-- Replace @StartDate and @EndDate with your desired date range
+-- Example: DECLARE StartDate DATETIME DEFAULT '2023-01-01 00:00:00';
+--              DECLARE EndDate DATETIME DEFAULT '2023-01-31 23:59:59';
+
+
+INSERT INTO `ndr-isd-datastore-dev.wrrs.report` (
+    id,
+    master_report_id,
+    report_version,
+    report_title,
+    provider_type_code,
+    report_sensitivity_status_code,
+    report_sensitive,
+    abnormal_results,
+    report_number,
+    placer_request_number,
+    placer_order_number,
+    provider_system_report_number,
+    pathway_identifier,
+    provider_system_id,
+    provider_department_id,
+    provider_department_site_id,
+    provider_department_organisation_id,
+    subject_location_id,
+    subject_site_id,
+    subject_organisation_id,
+    requestor_id,
+    requestor_specialty_id,
+    placer_id,
+    patient_type_id,
+    patient_category_id,
+    subject_family_name,
+    subject_given_name,
+    subject_address_1,
+    subject_address_2,
+    subject_address_3,
+    subject_address_4,
+    subject_post_code,
+    subject_dob,
+    subject_gender_code,
+    report_date_time,
+    specimen_collected_date,
+    specimen_collected_time,
+    specimen_received_date,
+    specimen_received_time,
+    comment,
+    updated_date_time,
+    is_archived,
+    transformation_process_id,
+    is_binary,
+    _last_updated_dw,
+    _ingestion_method_dw
+)
+WITH FilteredSourceData AS (
+    SELECT
+        Id,
+        MasterReportId,
+        ReportVersion,
+        ReportTitle,
+        ProviderTypeCode,
+        ReportSensitivityStatusCode,
+        ReportSensitive,
+        AbnormalResults,
+        ReportNumber,
+        PlacerRequestNumber,
+        PlacerOrderNumber,
+        ProviderSystemReportNumber,
+        PathwayIdentifier,
+        ProviderSystemId,
+        ProviderDepartmentId,
+        ProviderDepartmentSiteId,
+        ProviderDepartmentOrganisationId,
+        SubjectLocationId,
+        SubjectSiteId,
+        SubjectOrganisationId,
+        RequestorId,
+        RequestorSpecialtyId,
+        PlacerId,
+        PatientTypeId,
+        PatientCategoryId,
+        SubjectFamilyName,
+        SubjectGivenName,
+        SubjectAddress1,
+        SubjectAddress2,
+        SubjectAddress3,
+        SubjectAddress4,
+        SubjectPostCode,
+        SubjectDoB,
+        SubjectGenderCode,
+        ReportDateTime,
+        SpecimenCollectedDate,
+        SpecimenCollectedTime,
+        SpecimenReceivedDate,
+        SpecimenReceivedTime,
+        Comment,
+        UpdatedDateTime,
+        IsArchived,
+        TransformationProcessId,
+        IsBinary,
+        ROW_NUMBER() OVER (PARTITION BY MasterReportId ORDER BY UpdatedDateTime DESC) as rn
+    FROM
+        `ndr-ndap-acquisition-prod.wrrs_dbo.Report` -- Assuming this is your source table
+    WHERE
+        IsArchived = 0
+        -- Apply date range filter. Replace @StartDate and @EndDate with actual values or parameters.
+        AND UpdatedDateTime >= '2023-01-01 00:00:00'
+        AND UpdatedDateTime <= '2023-01-31 23:59:59'
+)
+SELECT
+    Id AS id,
+    MasterReportId AS master_report_id,
+    ReportVersion AS report_version,
+    ReportTitle AS report_title,
+    ProviderTypeCode AS provider_type_code,
+    ReportSensitivityStatusCode AS report_sensitivity_status_code,
+    ReportSensitive AS report_sensitive,
+    AbnormalResults AS abnormal_results,
+    ReportNumber AS report_number,
+    PlacerRequestNumber AS placer_request_number,
+    PlacerOrderNumber AS placer_order_number,
+    ProviderSystemReportNumber AS provider_system_report_number,
+    PathwayIdentifier AS pathway_identifier,
+    ProviderSystemId AS provider_system_id,
+    ProviderDepartmentId AS provider_department_id,
+    ProviderDepartmentSiteId AS provider_department_site_id,
+    ProviderDepartmentOrganisationId AS provider_department_organisation_id,
+    SubjectLocationId AS subject_location_id,
+    SubjectSiteId AS subject_site_id,
+    SubjectOrganisationId AS subject_organisation_id,
+    RequestorId AS requestor_id,
+    RequestorSpecialtyId AS requestor_specialty_id,
+    PlacerId AS placer_id,
+    PatientTypeId AS patient_type_id,
+    PatientCategoryId AS patient_category_id,
+    SubjectFamilyName AS subject_family_name,
+    SubjectGivenName AS subject_given_name,
+    SubjectAddress1 AS subject_address_1,
+    SubjectAddress2 AS subject_address_2,
+    SubjectAddress3 AS subject_address_3,
+    SubjectAddress4 AS subject_address_4,
+    SubjectPostCode AS subject_post_code,
+    SubjectDoB AS subject_dob,
+    SubjectGenderCode AS subject_gender_code,
+    ReportDateTime AS report_date_time,
+    SpecimenCollectedDate AS specimen_collected_date,
+    SpecimenCollectedTime AS specimen_collected_time,
+    SpecimenReceivedDate AS specimen_received_date,
+    SpecimenReceivedTime AS specimen_received_time,
+    Comment AS comment,
+    UpdatedDateTime AS updated_date_time,
+    IsArchived AS is_archived,
+    TransformationProcessId AS transformation_process_id,
+    IsBinary AS is_binary,
+    CURRENT_TIMESTAMP() AS _last_updated_dw, -- Sets the last updated timestamp to the current time
+    'gcp_appliance_data' AS _ingestion_method_dw -- Describes how data was ingested
+FROM
+    FilteredSourceData
+WHERE
+    rn = 1;
+
+
+
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+-- Observation ReQuest 
+INSERT INTO `ndr-isd-datastore-prod.wrrs.observation_request` (
+    id,
+    report_id,
+    code,
+    name,
+    provider_system_code,
+    read_code,
+    snomed_code,
+    observation_status_code,
+    sensitivity_status_code,
+    authorised_by_id,
+    report_display_order,
+    comment,
+    authorised_date_time,
+    performed_by,
+    _last_updated_dw,
+    _ingestion_method_dw
+)
+SELECT
+    source.Id,
+    source.ReportId,
+    source.Code,
+    source.Name,
+    source.ProviderSystemCode,
+    source.ReadCode,
+    source.SnomedCode,
+    source.ObservationStatusCode,
+    source.SensitivityStatusCode,
+    source.AuthorisedById, 
+    source.ReportDisplayOrder, 
+    source.Comment, 
+    source.AuthorisedDateTime, 
+    source.PerformedBy, 
+    CURRENT_TIMESTAMP() AS _last_updated_dw,
+    'gcp_appliance_data' AS _ingestion_method_dw
+FROM
+    `ndr-ndap-acquisition-prod.wrrs_dbo.ObservationRequest` AS source
+INNER JOIN
+    `ndr-isd-datastore-prod.wrrs.report` AS report
+ON
+    source.ReportId = report.id;
+
+
+
+
+-------------------------------------------------------------------------------------------------------
+
+
+-- This query populates the observation_result table based on a match in the report table.
+
+INSERT INTO `ndr-isd-datastore-prod.wrrs.observation_result` (
+    id,
+    observation_request_id,
+    report_id,
+    value_type,
+    code,
+    name,
+    provider_system_code,
+    read_code,
+    snomed_code,
+    value,
+    unit_of_measurement,
+    reference_range,
+    abnormal_status_code,
+    comment,
+    value_code,
+    _last_updated_dw,
+    _ingestion_method_dw
+)
+SELECT
+    source.Id,
+    source.ObservationRequestId,
+    source.ReportId,
+    source.ValueType,
+    source.Code,
+    source.Name,
+    source.ProviderSystemCode,
+    source.ReadCode,
+    source.SnomedCode,
+    source.Value,
+    source.UnitOfMeasurement,
+    source.ReferenceRange,
+    source.AbnormalStatusCode,
+    source.Comment,
+    source.ValueCode,
+    CURRENT_TIMESTAMP() AS _last_updated_dw,
+    'gcp_appliance_data' AS _ingestion_method_dw
+FROM
+    `ndr-ndap-acquisition-prod.wrrs_dbo.ObservationResult` AS source
+INNER JOIN
+    `ndr-isd-datastore-prod.wrrs.report` AS report
+ON
+    -- This condition ensures only records with a matching report ID are inserted.
+    report.id = source.ReportId;
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+Subject identifier link 
+
+
+-- This query populates the report_subject_identifierlink table based on a match in the report table.
+INSERT INTO `ndr-isd-datastore-prod.wrrs.report_subject_identifierlink` (
+    id,
+    report_id,
+    subject_identifier_id,
+    _last_updated_dw,
+    _ingestion_method_dw
+)
+SELECT
+    -- Mapping source columns (PascalCase) to destination columns (snake_case)
+    source.Id,
+    source.ReportId,
+    source.SubjectIdentifierId,
+    CURRENT_TIMESTAMP() AS _last_updated_dw,
+    'gcp_appliance_data' AS _ingestion_method_dw
+FROM
+    `ndr-ndap-acquisition-prod.wrrs_dbo.ReportSubjectIdentifierLink` AS source
+INNER JOIN
+    `ndr-isd-datastore-prod.wrrs.report` AS report
+ON
+    -- This condition ensures only records with a matching report ID are inserted.
+    report.id = source.ReportId;
+
